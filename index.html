@@ -55,7 +55,7 @@
 
 	// The closest device found.
 	var deviceWithStrongestRSSI = null
-
+    var ammountOfBeats = 0;
 	function startScan()
 	{
 		console.log('Scanning for device...')
@@ -151,19 +151,27 @@
         var service = device.__services[6];
         var characteristic = service.__characteristics[0];
         var descriptor = characteristic.__descriptors[0];
-        console.log('  service: ' + service.uuid);
+        console.log('  services: ' + JSON.stringify(device.__services));
         console.log('    characteristic: ' + characteristic.uuid);
         console.log('      descriptor: ' + descriptor.uuid);
         device.enableNotification(
             characteristic.uuid,
             function(data){
-                console.log('Data: '+JSON.stringify(data));
-                $('#rate').html('Heartrate: '+JSON.stringify(data));
+                ammountOfBeats++;
             },
             function(errorCode){
                 console.log("fail: "+errorCode);
             }
         );
+        function myLoop () {
+           setTimeout(function () {
+               console.log('Data: '+ammountOfBeats);
+               $('#rate').html('Heartrate: '+ammountOfBeats);
+               ammountOfBeats = 0;
+               myLoop();
+           }, 5000)
+        }
+        myLoop();                      //  start the loop
         device.writeDescriptor(
             characteristic.uuid,
             descriptor.uuid,
