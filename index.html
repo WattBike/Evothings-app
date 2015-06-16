@@ -1,197 +1,59 @@
-<!DOCTYPE html>
-
+<!doctype html>
 <html>
-
-<head>
-	<meta charset="utf-8" />
-	<meta http-equiv="pragma" content="no-cache" />
-	<meta http-equiv="expires" content="-1" />
-	<meta name="viewport" content="width=device-width" />
-
-	<title>EasyBLE Demo</title>
-
-	<style>
-	body {
-		font-family: sans-serif;
-		font-size: 120%;
-	}
-	button {
-		font-family: sans-serif;
-		font-size: 20px;
-		font-weight: bold;
-		padding: 10px 20px;
-		/*-moz-border-radius: 6px;
-		-webkit-border-radius: 6px;*/
-		border-radius: 6px;
-		border: 1px solid #00000;
-	}
-	</style>
-
-	<script>
-	// If running this file from Evothings Workbench redirect console.log
-	// to the Workbench Tools window.
-	if (window.hyper && window.hyper.log) { console.log = hyper.log }
-	</script>
-
-	<script src="cordova.js"></script>
-    <script src="libs/jquery.js"></script>
-	<script src="libs/evothings/evothings.js"></script>
-	<script src="libs/evothings/easyble/easyble.js"></script>
-</head>
-
-<body>
-	<h1>Heartrate monitor</h1>
-    <p>This Application will show your current heartrate.</p>
-    <h2 id="rate">Heartrate: 0</h2>
-
-	<script>
-	// App now uses a button instead of scanning automatically.
-	// Run init function when the mobile device is ready
-	// and alls scripts are loaded.
-	document.addEventListener(
-        'deviceready',
-		function() { evothings.scriptsLoaded(startScan) },
-		false)
-
-	// The closest device found.
-	var deviceWithStrongestRSSI = null
-    var ammountOfBeats = 0;
-	function startScan()
-	{
-		console.log('Scanning for device...')
-
-		// Reset found device variable.
-		deviceWithStrongestRSSI = null
-
-		// Specify that devices are reported repeatedly so that
-		// we get the most recent RSSI reading for each device.
-		evothings.easyble.reportDeviceOnce(false)
-
-		// Start scanning.
-		evothings.easyble.startScan(deviceDetected, scanError)
-
-		// Connect to the closest device after this timeout.
-		setTimeout(connectToFoundDevice, 3000)
-	}
-
-	function stopScan()
-	{
-		console.log('Stop scanning')
-
-		evothings.easyble.stopScan()
-	}
-
-	function deviceDetected(device)
-	{
-		console.log('Device found: ' + device.name + ' rssi: ' + device.rssi)
-		// THIS IS WHERE YOU SPECIFY THE NAME OF THE
-		// BLE DEVICE TO CONNECT TO.
-		var myDeviceName = 'ViiiivaB261'
-
-		// Check that advertised name matches the devices we are looking for.
-		if (device.name == myDeviceName)
-		{
-			if (!deviceWithStrongestRSSI)
-			{
-				// First found device.
-				deviceWithStrongestRSSI = device
-			}
-			else
-			{
-				// Update if next found device has stronger RSSI.
-				if (device.rssi > deviceWithStrongestRSSI.rssi)
-				{
-					deviceWithStrongestRSSI = device
-				}
-			}
-		}
-	}
-
-	function connectToFoundDevice()
-	{
-		if (!deviceWithStrongestRSSI)
-		{
-			console.log('No device found')
-			return
-		}
-		stopScan();
-		deviceWithStrongestRSSI.connect(deviceConnected, connectError);
-	}
-
-	function deviceConnected(device)
-	{
-		console.log('Connected to device: ' + device.name)
-		console.log('Reading services... (this may take some time)')
-		device.readServices(
-			["0000180d-0000-1000-8000-00805f9b34fb"],
-			doneReadingServices,
-			readServicesError)
-	}
-
-	function scanError(errorCode)
-	{
-		console.log('Scan failed:  '+ errorCode)
-	}
-
-	function connectError(errorCode)
-	{
-		console.log('Connect failed:  '+ errorCode);
-	}
-
-	function readServicesError(errorCode)
-	{
-		console.log('Read services failed:  '+ errorCode)
-	}
-
-	// Function that gets called when reading device.readServices()
-	// has successfully completed.
-	function doneReadingServices(device)
-	{
-		// Print to Tools window in Evothings Workbench.
-        var service = device.__services[6];
-        var characteristic = service.__characteristics[0];
-        var descriptor = characteristic.__descriptors[0];
-        console.log('  services: ' + JSON.stringify(device.__services));
-        console.log('    characteristic: ' + characteristic.uuid);
-        console.log('      descriptor: ' + descriptor.uuid);
-        device.enableNotification(
-            characteristic.uuid,
-            function(data){
-                ammountOfBeats++;
-            },
-            function(errorCode){
-                console.log("fail: "+errorCode);
-            }
-        );
-        function myLoop () {
-           setTimeout(function () {
-               console.log('Data: '+ammountOfBeats);
-               $('#rate').html('Heartrate: '+ammountOfBeats);
-               ammountOfBeats = 0;
-               myLoop();
-           }, 5000)
-        }
-        myLoop();                      //  start the loop
-        device.writeDescriptor(
-            characteristic.uuid,
-            descriptor.uuid,
-            new Uint8Array([1,0]),
-            function(data){
-                console.log('Data: '+JSON.stringify(data));
-                $('#rate').html('Heartrate: '+JSON.stringify(data));
-            },
-            function(errorCode){
-                console.log('Error reading: '+JSON.stringify(errorCode));
-            }
-        );
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com; style-src 'self' 'unsafe-inline' data: https://code.jquery.com; media-src *; connect-src 'self' https://seanmolenaar.eu; script-src 'self' https://code.jquery.com;">
+		<title>WattBike</title>
         
-		// Done disconnecting from device.
-		console.log('Done disconnecting from device');
-
-		// Disconnect from device.
-		//device.close();
-	}
-	</script>
-</body>
-
+		<link rel="stylesheet" href="themes/Bootstrap.min.css">
+		<link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile.structure-1.4.5.min.css" />
+		<link rel="stylesheet" href="themes/jquery.mobile.icons.min.css" />
+	</head>
+	<body>
+		<div data-role="page" data-theme="a" id="home">
+            <div data-role="header" style="overflow:hidden;">
+                <h1>WattBike</h1>
+                <a href="#settings-pre" data-icon="gear" class="ui-btn-right">Options</a>
+            </div><!-- /header -->
+			<div data-role="content" data-theme="a">
+				<h2>Heartrate monitor</h2>
+                <p>This Application will show your current heartrate.</p>
+                <b id="rate">Heartrate: N/A</b>
+                <a title="Click to rescan" href="#" class="rescan ui-btn ui-corner-all ui-icon-refresh ui-btn-icon-left success-btn">Restart heartrate scan</a>
+			</div>
+		</div>
+		<div data-role="page" data-theme="a" id="settings-pre">
+			<div data-role="header" data-position="inline">
+				<h1>WattBike - Login</h1>
+			</div>
+			<div data-role="content" data-theme="a" class="settings-pre">
+				<h2>Login</h2>
+                <small>You are not logged in yet. Please login to make use of the WattBike services.</small>
+                <form id="target">
+                    <input type="email" name="email" id="mail" placeholder="email"/>
+                    <input type="password" name="password" id="pass" placeholder="password"/>
+                    <a title="Click to login" href="#" class="submit ui-btn ui-corner-all">Login</a>
+                    <div class="result"></div>
+                </form>
+			</div>
+		</div>
+        <div data-role="page" data-theme="a" id="settings-past">
+			<div data-role="header" data-position="inline">
+				<h1>WattBike - Settings</h1>
+                <a href="#home" data-icon="carat-l" class="ui-btn-left">back</a>
+			</div>
+			<div data-role="content" data-theme="a" class="settings-pre">
+				<h2>Settings</h2>
+                you are already logged in.
+                <a href="#" class="logout ui-btn ui-corner-all">Logout</a>
+			</div>
+		</div>
+        <script src="libs/jquery.js"></script>
+        <script src="cordova.js"></script>
+        <script src="libs/evothings/evothings.js"></script>
+        <script src="libs/evothings/easyble/easyble.js"></script>
+        <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+        <script type="text/javascript" src="index.js"></script>
+	</body>
 </html>
