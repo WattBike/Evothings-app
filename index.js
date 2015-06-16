@@ -226,7 +226,7 @@
                 $.mobile.changePage($("#settings-past"));
             }else{
                 console.log("Login Failed!");
-                $("#target div.result").addClass("fail").text("Error: Username and/or password invalid.");
+                $("#target div.result").addClass("fail").text("Error: "+data.desc);
             }
         }).fail(function(data){
             console.log(data.statusText);
