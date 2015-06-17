@@ -18,6 +18,7 @@
 	var deviceWithStrongestRSSI = null
 	    //empty variable for browser debugging
 	var device_ID = "0";
+    var rate;
 
 	/**
 	 * First function to be run. Checks previous login and redirects if need be.
@@ -142,7 +143,7 @@
 	    var service = device.__services[6];
 	    var characteristic = service.__characteristics[0];
 	    var descriptor = characteristic.__descriptors[0];
-	    var rate;
+	    
 	    console.log('  services: ' + service.uuid);
 	    console.log('    characteristic: ' + characteristic.uuid);
 	    console.log('      descriptor: ' + descriptor.uuid);
@@ -153,7 +154,6 @@
 	        function(data) {
 	            var dataArray = new Uint8Array(data);
 	            rate = dataArray[1];
-                console.log(rate);
 	            $('#rate').html('Heartrate: ' + rate);
 	        },
 	        function(errorCode) {
@@ -182,13 +182,13 @@
 	 */
 	function myLoop() {
 	    setTimeout(function() {
-	        $('#rate').html('Heartrate: ' + rate);
 	        if (!cordova.plugins.backgroundMode.isEnabled()) {
                 cordova.plugins.backgroundMode.enable();
-                cordova.plugins.backgroundMode.configure({
-                    text: "Heartrate: " + rate + "bpm",
-                });
             }
+            cordova.plugins.backgroundMode.configure({
+                title: "Heartbeat is monitored",
+                text: "Heartrate: " + rate + "bpm"
+            });
 	        var dataset = null;
 	        $.ajax({
 	            url: "https://seanmolenaar.eu/team8/Application/rest.php?bpm=" + rate + "&UUID=" + device_ID,
@@ -232,10 +232,25 @@
 	 * Log people out.
      2*/
 	$("#settings-past a.logout").on("tap click", function(event) {
-	    window.localStorage.removeItem("loggedIn");
-	    $('rescan').removeClass("success-btn").addClass("fail-btn");
-	    $("#settings-pre div.result").removeClass("fail success").text(" ");
-	    $.mobile.changePage($("#settings-pre"));
+        $.ajax({
+	        url: "https://seanmolenaar.eu/team8/Application/rest.php",
+	        method: 'POST',
+	        data: {
+	            first_active: window.localStorage.getItem("first_active"),
+	            UUID: device_ID
+	        },
+	        context: document.body,
+	        dataType: "json"
+	    }).complete(function() {
+            window.localStorage.removeItem("loggedIn");
+            window.localStorage.removeItem("first_active");
+            $('rescan').removeClass("success-btn").addClass("fail-btn");
+	       $("#settings-pre div.result").removeClass("fail success").text(" ");
+	       $.mobile.changePage($("#settings-pre"));
+            if (!cordova.plugins.backgroundMode.isEnabled()) {
+                cordova.plugins.backgroundMode.disable();
+            }
+	    });
 	});
 
 	/**
@@ -268,16 +283,19 @@
 	            UUID: device_ID
 	        },
 	        context: document.body,
-	        dataType: "json"
 	    }).done(function(data) {
-	        if (data.status == "login") {
+            var dataset = JSON.parse(data);
+            console.log(JSON.stringify(dataset));
+	        if (dataset.status == "login") {
 	            console.log("Login succeeded!");
 	            window.localStorage.setItem("loggedIn", JSON.stringify("correct"));
+                window.localStorage.setItem("first_active", dataset.date);
 	            $("#target div.result").addClass("success").text("You are now logged in.");
-	            $.mobile.changePage($("#settings-past"));
+	            $.mobile.changePage($("#home"));
+                startScan();
 	        } else {
 	            console.log("Login Failed!");
-	            $("#target div.result").addClass("fail").text("Error: " + data.desc);
+	            $("#target div.result").addClass("fail").text("Error: " + dataset.desc);
 	        }
 	    }).fail(function(data) {
 	        console.log(data.statusText);
